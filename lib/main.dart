@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'screens/splash/splash_screen.dart';
+import 'screens/home/home_screen.dart';
 
 void main() {
-  runApp(const UltraCutAI());
+  runApp(const NovaCutUltraAI());
 }
 
-class UltraCutAI extends StatelessWidget {
-  const UltraCutAI({super.key});
+class NovaCutUltraAI extends StatelessWidget {
+  const NovaCutUltraAI({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'UltraCut AI',
-      home: const SplashScreen(),
+      title: 'NovaCut Ultra AI',
+      home: const HomeScreen(),
     );
   }
-}
+}}
