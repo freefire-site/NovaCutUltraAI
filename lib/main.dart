@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
 import 'screens/home/home_screen.dart';
 
 void main() {
@@ -13,6 +14,7 @@ class NovaCutUltraAI extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NovaCut Ultra AI',
+      theme: AppTheme.darkTheme,
       home: const HomeScreen(),
     );
   }
