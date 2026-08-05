@@ -16,4 +16,4 @@ class NovaCutUltraAI extends StatelessWidget {
       home: const HomeScreen(),
     );
   }
-}}
+}
