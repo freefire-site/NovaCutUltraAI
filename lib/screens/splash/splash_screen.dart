@@ -9,7 +9,7 @@ class SplashScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Center(
         child: Text(
-          'UltraCut AI',
+          'NovaCut Ultra AI',
           style: TextStyle(
             color: Colors.white,
             fontSize: 32,
