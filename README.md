@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # ultracut
+=======
+# novacut_ultra_ai
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
 
 A new Flutter project.
 

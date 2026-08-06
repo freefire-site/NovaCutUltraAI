@@ -45,11 +45,19 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
+<<<<<<< HEAD
     gtk_header_bar_set_title(header_bar, "ultracut");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
     gtk_window_set_title(window, "ultracut");
+=======
+    gtk_header_bar_set_title(header_bar, "novacut_ultra_ai");
+    gtk_header_bar_set_show_close_button(header_bar, TRUE);
+    gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
+  } else {
+    gtk_window_set_title(window, "novacut_ultra_ai");
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
   }
 
   gtk_window_set_default_size(window, 1280, 720);

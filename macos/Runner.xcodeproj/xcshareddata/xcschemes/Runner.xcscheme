@@ -15,7 +15,11 @@
                   <BuildableReference
                      BuildableIdentifier = "primary"
                      BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
                      BuildableName = "ultracut.app"
+=======
+                     BuildableName = "novacut_ultra_ai.app"
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
                      BlueprintName = "Runner"
                      ReferencedContainer = "container:Runner.xcodeproj">
                   </BuildableReference>
@@ -33,7 +37,11 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
                BuildableName = "ultracut.app"
+=======
+               BuildableName = "novacut_ultra_ai.app"
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
                BlueprintName = "Runner"
                ReferencedContainer = "container:Runner.xcodeproj">
             </BuildableReference>
@@ -49,7 +57,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
             BuildableName = "ultracut.app"
+=======
+            BuildableName = "novacut_ultra_ai.app"
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
             BlueprintName = "Runner"
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>
@@ -84,7 +96,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
             BuildableName = "ultracut.app"
+=======
+            BuildableName = "novacut_ultra_ai.app"
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
             BlueprintName = "Runner"
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>
@@ -101,7 +117,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
             BuildableName = "ultracut.app"
+=======
+            BuildableName = "novacut_ultra_ai.app"
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
             BlueprintName = "Runner"
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>

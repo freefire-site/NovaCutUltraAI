@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "ultracut",
     "short_name": "ultracut",
+=======
+    "name": "novacut_ultra_ai",
+    "short_name": "novacut_ultra_ai",
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

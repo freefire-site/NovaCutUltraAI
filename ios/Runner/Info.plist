@@ -7,7 +7,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
+<<<<<<< HEAD
 	<string>Ultracut</string>
+=======
+	<string>Novacut Ultra Ai</string>
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +19,11 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
+<<<<<<< HEAD
 	<string>ultracut</string>
+=======
+	<string>novacut_ultra_ai</string>
+>>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
