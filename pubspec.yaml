@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 name: ultracut
-=======
-name: novacut_ultra_ai
->>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
