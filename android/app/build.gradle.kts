@@ -5,11 +5,8 @@ plugins {
 }
 
 android {
-<<<<<<< HEAD
     namespace = "com.example.ultracut"
-=======
     namespace = "com.example.novacut_ultra_ai"
->>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,11 +17,8 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-<<<<<<< HEAD
         applicationId = "com.example.ultracut"
-=======
         applicationId = "com.example.novacut_ultra_ai"
->>>>>>> 1989033bc11077ab029cb021f09ee2ede67a5ed3
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
