@@ -15,7 +15,9 @@ class HomeScreen extends StatelessWidget {
       source: ImageSource.gallery,
     );
 
-    if (video == null || !context.mounted) return;
+    if (video == null || !context.mounted) {
+      return;
+    }
 
     Navigator.push(
       context,
@@ -39,13 +41,14 @@ class HomeScreen extends StatelessWidget {
           Icon(
             icon,
             color: AppColors.secondary,
-            size: 36,
+            size: 38,
           ),
           const SizedBox(height: 12),
           Text(
             title,
             style: const TextStyle(
               color: Colors.white,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -57,56 +60,46 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               const AppHeader(),
 
               const SizedBox(height: 25),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(25),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    const Text(
-                      "UltraCut AI",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () => pickVideo(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Create New Video",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    const Text(
-                      "Create amazing videos with AI",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
+                      SizedBox(height: 8),
+                      Text(
+                        "AI powered editing experience",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    ElevatedButton.icon(
-                      onPressed: () => pickVideo(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text("Create Video"),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
@@ -130,41 +123,11 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 15,
                 crossAxisSpacing: 15,
                 children: [
-                  toolCard(Icons.movie, "Editor"),
-                  toolCard(Icons.auto_awesome, "AI Video"),
-                  toolCard(Icons.image, "AI Image"),
+                  toolCard(Icons.movie, "Video Editor"),
+                  toolCard(Icons.smart_toy, "AI Video"),
+                  toolCard(Icons.image, "AI Photo"),
                   toolCard(Icons.folder, "Projects"),
                 ],
-              ),
-
-              const SizedBox(height: 30),
-
-              const Text(
-                "Recent Projects",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              Container(
-                height: 120,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Center(
-                  child: Text(
-                    "No projects yet",
-                    style: TextStyle(
-                      color: Colors.white54,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
