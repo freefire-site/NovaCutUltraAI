@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../widgets/app_header.dart';
 import '../../theme/app_colors.dart';
+import '../video_preview/video_preview_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,10 +19,11 @@ class HomeScreen extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Video selected: ${video.name}',
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VideoPreviewScreen(
+          videoPath: video.path,
         ),
       ),
     );
