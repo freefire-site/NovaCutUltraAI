@@ -1,9 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../widgets/app_header.dart';
 import '../../theme/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<void> pickVideo(BuildContext context) async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? video = await picker.pickVideo(
+      source: ImageSource.gallery,
+    );
+
+    if (video == null || !context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Video selected: ${video.name}',
+        ),
+      ),
+    );
+  }
 
   Widget toolCard(IconData icon, String title) {
     return Container(
@@ -46,33 +67,36 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 25),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Create New Video",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () => pickVideo(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Create New Video",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "AI powered editing experience",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
+                      SizedBox(height: 8),
+                      Text(
+                        "AI powered editing experience",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
