@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../widgets/app_header.dart';
 import '../../theme/app_colors.dart';
 import '../video_preview/video_preview_screen.dart';
+import '../editor/editor_screen.dart';
+import '../projects/projects_screen.dart';
+import '../tools/ai_tools_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -130,10 +133,50 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 15,
                 crossAxisSpacing: 15,
                 children: [
-                  toolCard(Icons.movie, "Editor"),
-                  toolCard(Icons.auto_awesome, "AI Video"),
-                  toolCard(Icons.image, "AI Image"),
-                  toolCard(Icons.folder, "Projects"),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EditorScreen(),
+                        ),
+                      );
+                    },
+                    child: toolCard(Icons.movie, "Editor"),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AiToolsScreen(),
+                        ),
+                      );
+                    },
+                    child: toolCard(Icons.auto_awesome, "AI Video"),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AiToolsScreen(),
+                        ),
+                      );
+                    },
+                    child: toolCard(Icons.image, "AI Image"),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProjectsScreen(),
+                        ),
+                      );
+                    },
+                    child: toolCard(Icons.folder, "Projects"),
+                  ),
                 ],
               ),
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../editor/editor_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -256,7 +257,16 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
     String title,
   ) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: () {
+        if (title == 'Edit') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EditorScreen(videoPath: widget.videoPath),
+            ),
+          );
+        }
+      },
       icon: Icon(icon),
       label: Text(title),
       style: OutlinedButton.styleFrom(
