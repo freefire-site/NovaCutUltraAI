@@ -17,6 +17,56 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   late VideoPlayerController _controller;
 
+  String overlayText = '';
+  bool showTextOverlay = false;
+  double textSize = 28;
+  Color textColor = Colors.white;
+  double trimStart = 0;
+  double trimEnd = 1;
+  String selectedFilter = 'None';
+
+  void _addText() {
+    final controller = TextEditingController(text: overlayText);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1B1B1B),
+          title: const Text(
+            'Add Text',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Enter text',
+              hintStyle: TextStyle(color: Colors.white54),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  overlayText = controller.text;
+                  showTextOverlay = controller.text.trim().isNotEmpty;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,9 +86,26 @@ class _EditorScreenState extends State<EditorScreen> {
     super.dispose();
   }
 
-  Widget _editorAction(IconData icon, String title) {
+  Widget _colorButton(Color color) {
+    return IconButton(
+      onPressed: () {
+        setState(() => textColor = color);
+      },
+      icon: Icon(
+        Icons.circle,
+        color: color,
+        size: 26,
+      ),
+    );
+  }
+
+  Widget _editorAction(
+    IconData icon,
+    String title, {
+    VoidCallback? onPressed,
+  }) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: onPressed ?? () {},
       icon: Icon(icon),
       label: Text(title),
       style: OutlinedButton.styleFrom(
@@ -63,7 +130,29 @@ class _EditorScreenState extends State<EditorScreen> {
               child: _controller.value.isInitialized
                   ? AspectRatio(
                       aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          VideoPlayer(_controller),
+                          if (showTextOverlay)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              color: Colors.black54,
+                              child: Text(
+                                overlayText,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: textSize,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     )
                   : const CircularProgressIndicator(),
             ),
@@ -179,6 +268,99 @@ class _EditorScreenState extends State<EditorScreen> {
 
           const SizedBox(height: 10),
 
+          // Text styling
+          if (showTextOverlay)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.format_size, color: Colors.white),
+                      Expanded(
+                        child: Slider(
+                          value: textSize,
+                          min: 16,
+                          max: 60,
+                          divisions: 22,
+                          onChanged: (value) {
+                            setState(() => textSize = value);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _colorButton(Colors.white),
+                      _colorButton(Colors.red),
+                      _colorButton(Colors.yellow),
+                      _colorButton(Colors.cyan),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+          // Trim range
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Trim',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                RangeSlider(
+                  values: RangeValues(trimStart, trimEnd),
+                  min: 0,
+                  max: 1,
+                  onChanged: (values) {
+                    setState(() {
+                      trimStart = values.start;
+                      trimEnd = values.end;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Filters
+          SizedBox(
+            height: 45,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                'None',
+                'Bright',
+                'Warm',
+                'Cool',
+                'Vintage',
+                'B&W',
+              ].map((filter) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(filter),
+                    selected: selectedFilter == filter,
+                    onSelected: (_) {
+                      setState(() => selectedFilter = filter);
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
           // Editor actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -195,6 +377,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   child: _editorAction(
                     Icons.text_fields,
                     'Text',
+                    onPressed: _addText,
                   ),
                 ),
                 const SizedBox(width: 10),
