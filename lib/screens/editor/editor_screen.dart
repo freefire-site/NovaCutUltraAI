@@ -72,6 +72,17 @@ class _EditorScreenState extends State<EditorScreen> {
               size: 55,
             ),
           ),
+
+          if (_controller.value.isInitialized)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: VideoProgressIndicator(
+                _controller,
+                allowScrubbing: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+
           const SizedBox(height: 20),
         ],
       ),
