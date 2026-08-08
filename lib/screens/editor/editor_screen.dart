@@ -27,10 +27,14 @@ class _EditorScreenState extends State<EditorScreen> {
   double trimStart = 0;
   double trimEnd = 1;
   String selectedFilter = 'None';
+  double filterIntensity = 1.0;
+  bool isExporting = false;
+  final List<String> _editHistory = [];
+  final List<String> _redoHistory = [];
   String? selectedAudioPath;
 
   Future<void> _pickAudio() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.audio,
     );
 
@@ -49,8 +53,51 @@ class _EditorScreenState extends State<EditorScreen> {
     }
   }
 
+  void _restoreHistoryState(String state) {
+    if (!state.startsWith('filter:')) {
+      return;
+    }
+
+    final parts = state.split('|');
+
+    if (parts.length == 2) {
+      final filter = parts[0].replaceFirst('filter:', '');
+      final intensityText =
+          parts[1].replaceFirst('intensity:', '');
+      final intensity = double.tryParse(intensityText);
+
+      if (intensity != null) {
+        selectedFilter = filter;
+        filterIntensity = intensity;
+      }
+    }
+  }
+
+  String _getVideoFilter() {
+    final i = filterIntensity;
+
+    switch (selectedFilter) {
+      case 'Bright':
+        return 'eq=brightness=${0.08 * i}:contrast=${1.0 + (0.05 * i)}';
+      case 'Warm':
+        return 'colorbalance=rs=${0.08 * i}:gs=${0.03 * i}:bs=${-0.05 * i}';
+      case 'Cool':
+        return 'colorbalance=rs=${-0.05 * i}:gs=${0.03 * i}:bs=${0.08 * i}';
+      case 'Vintage':
+        return 'eq=saturation=${1.0 - (0.25 * i)}:contrast=${1.0 - (0.1 * i)}';
+      case 'B&W':
+        return 'hue=s=${1.0 - i}';
+      default:
+        return 'null';
+    }
+  }
+
   Future<void> _exportVideo() async {
-    if (widget.videoPath == null) return;
+    if (widget.videoPath == null || isExporting) return;
+
+    setState(() {
+      isExporting = true;
+    });
 
     final input = widget.videoPath!;
     final output = '${input}_ultracut.mp4';
@@ -68,17 +115,23 @@ class _EditorScreenState extends State<EditorScreen> {
       );
     }
 
+    final filter = _getVideoFilter();
+
     final command = selectedAudioPath != null
         ? '-y -ss $start -i "$input" -i "$selectedAudioPath" '
             '-t $clipDuration -map 0:v:0 -map 1:a:0 '
-            '-c:v libx264 -c:a aac -shortest "$output"'
+            '-vf "$filter" -c:v libx264 -c:a aac -shortest "$output"'
         : '-y -ss $start -i "$input" -t $clipDuration '
-            '-c:v libx264 -c:a aac "$output"';
+            '-vf "$filter" -c:v libx264 -c:a aac "$output"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
 
     if (!mounted) return;
+
+    setState(() {
+      isExporting = false;
+    });
 
     if (returnCode != null && returnCode.isValueSuccess()) {
       try {
@@ -137,6 +190,11 @@ class _EditorScreenState extends State<EditorScreen> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
+                  if (overlayText.isNotEmpty) {
+                    _editHistory.add(overlayText);
+                  }
+                  _redoHistory.clear();
+
                   overlayText = controller.text;
                   showTextOverlay = controller.text.trim().isNotEmpty;
                 });
@@ -444,6 +502,79 @@ class _EditorScreenState extends State<EditorScreen> {
           ),
 
           // Filters
+          // Filter intensity
+          if (selectedFilter != 'None')
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune, color: Colors.white),
+                  Expanded(
+                    child: Slider(
+                      value: filterIntensity,
+                      min: 0,
+                      max: 1,
+                      divisions: 10,
+                      label: '${(filterIntensity * 100).round()}%',
+                      onChanged: (value) {
+                      setState(() {
+                        _editHistory.add(
+                          'filter:$selectedFilter|intensity:$filterIntensity',
+                        );
+                        _redoHistory.clear();
+                        filterIntensity = value;
+                      });
+                    },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Undo / Redo
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _editHistory.isEmpty
+                    ? null
+                    : () {
+                        setState(() {
+                          final state = _editHistory.removeLast();
+                          _redoHistory.add(
+                            'filter:$selectedFilter|intensity:$filterIntensity',
+                          );
+                          _restoreHistoryState(state);
+                        });
+                      },
+                icon: const Icon(Icons.undo),
+                label: const Text('Undo'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: _redoHistory.isEmpty
+                    ? null
+                    : () {
+                        setState(() {
+                          final state = _redoHistory.removeLast();
+                          _editHistory.add(
+                            'filter:$selectedFilter|intensity:$filterIntensity',
+                          );
+                          _restoreHistoryState(state);
+                        });
+                      },
+                icon: const Icon(Icons.redo),
+                label: const Text('Redo'),
+              ),
+            ],
+          ),
+
+          if (isExporting)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: LinearProgressIndicator(),
+            ),
+
           SizedBox(
             height: 45,
             child: ListView(
@@ -463,7 +594,13 @@ class _EditorScreenState extends State<EditorScreen> {
                     label: Text(filter),
                     selected: selectedFilter == filter,
                     onSelected: (_) {
-                      setState(() => selectedFilter = filter);
+                      setState(() {
+                        _editHistory.add(
+                          'filter:$selectedFilter|intensity:$filterIntensity',
+                        );
+                        _redoHistory.clear();
+                        selectedFilter = filter;
+                      });
                     },
                   ),
                 );
