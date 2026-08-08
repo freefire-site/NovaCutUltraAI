@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:gal/gal.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:video_player/video_player.dart';
 
@@ -25,6 +27,27 @@ class _EditorScreenState extends State<EditorScreen> {
   double trimStart = 0;
   double trimEnd = 1;
   String selectedFilter = 'None';
+  String? selectedAudioPath;
+
+  Future<void> _pickAudio() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        selectedAudioPath = result.files.single.path;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Audio selected successfully'),
+        ),
+      );
+    }
+  }
 
   Future<void> _exportVideo() async {
     if (widget.videoPath == null) return;
@@ -45,8 +68,12 @@ class _EditorScreenState extends State<EditorScreen> {
       );
     }
 
-    final command =
-        '-y -ss $start -i "$input" -t $clipDuration -c:v libx264 -c:a aac "$output"';
+    final command = selectedAudioPath != null
+        ? '-y -ss $start -i "$input" -i "$selectedAudioPath" '
+            '-t $clipDuration -map 0:v:0 -map 1:a:0 '
+            '-c:v libx264 -c:a aac -shortest "$output"'
+        : '-y -ss $start -i "$input" -t $clipDuration '
+            '-c:v libx264 -c:a aac "$output"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -54,9 +81,26 @@ class _EditorScreenState extends State<EditorScreen> {
     if (!mounted) return;
 
     if (returnCode != null && returnCode.isValueSuccess()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export complete: $output')),
-      );
+      try {
+        await Gal.putVideo(
+          output,
+          album: 'UltraCut',
+        );
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Video exported and saved to Gallery!'),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gallery save failed: $e')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Export failed')),
@@ -224,6 +268,35 @@ class _EditorScreenState extends State<EditorScreen> {
             ),
 
           const SizedBox(height: 10),
+
+          // Audio
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickAudio,
+                    icon: const Icon(Icons.music_note),
+                    label: Text(
+                      selectedAudioPath == null
+                          ? 'Add Music'
+                          : 'Music Selected',
+                    ),
+                  ),
+                ),
+                if (selectedAudioPath != null)
+                  IconButton(
+                    onPressed: () {
+                      setState(() => selectedAudioPath = null);
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
 
           // Volume
           Row(
