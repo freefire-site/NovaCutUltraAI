@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:video_player/video_player.dart';
 
 class EditorScreen extends StatefulWidget {
@@ -24,6 +25,44 @@ class _EditorScreenState extends State<EditorScreen> {
   double trimStart = 0;
   double trimEnd = 1;
   String selectedFilter = 'None';
+
+  Future<void> _exportVideo() async {
+    if (widget.videoPath == null) return;
+
+    final input = widget.videoPath!;
+    final output = '${input}_ultracut.mp4';
+
+    final duration = _controller.value.duration.inMilliseconds / 1000.0;
+    final start = trimStart * duration;
+    final end = trimEnd * duration;
+    final clipDuration = end - start;
+
+    if (clipDuration <= 0) return;
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exporting video...')),
+      );
+    }
+
+    final command =
+        '-y -ss $start -i "$input" -t $clipDuration -c:v libx264 -c:a aac "$output"';
+
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+
+    if (!mounted) return;
+
+    if (returnCode != null && returnCode.isValueSuccess()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export complete: $output')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export failed')),
+      );
+    }
+  }
 
   void _addText() {
     final controller = TextEditingController(text: overlayText);
@@ -429,7 +468,7 @@ class _EditorScreenState extends State<EditorScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: _exportVideo,
                 icon: const Icon(Icons.save),
                 label: const Text('Export Video'),
               ),
