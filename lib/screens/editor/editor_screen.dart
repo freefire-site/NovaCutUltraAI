@@ -34,7 +34,7 @@ class _EditorScreenState extends State<EditorScreen> {
   String? selectedAudioPath;
 
   Future<void> _pickAudio() async {
-    final result = await FilePicker.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.audio,
     );
 
