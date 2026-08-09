@@ -269,31 +269,46 @@ class _EditorScreenState extends State<EditorScreen> {
           Expanded(
             child: Center(
               child: _controller.value.isInitialized
-                  ? AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          VideoPlayer(_controller),
-                          if (showTextOverlay)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              color: Colors.black54,
-                              child: Text(
-                                overlayText,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: textSize,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+                        final videoSize = _controller.value.size;
+
+                        return Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          color: Colors.black,
+                          child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: SizedBox(
+                              width: videoSize.width,
+                              height: videoSize.height,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  VideoPlayer(_controller),
+                                  if (showTextOverlay)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      color: Colors.black54,
+                                      child: Text(
+                                        overlayText,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: textSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                        );
+                      },
                     )
                   : const CircularProgressIndicator(),
             ),
