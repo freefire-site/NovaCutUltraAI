@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../widgets/app_header.dart';
 import '../../theme/app_colors.dart';
 import '../video_preview/video_preview_screen.dart';
+import '../projects/projects_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -79,31 +80,100 @@ class HomeScreen extends StatelessWidget {
                     gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(28),
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Create New Video",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 42,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Create New Video",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        "AI powered editing experience",
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 15,
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "AI powered editing experience",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 22),
+                    ElevatedButton.icon(
+                      onPressed: () => pickVideo(context),
+                      icon: const Icon(Icons.add),
+                      label: const Text("Start Creating"),
+                    ),
+                  ],
+                ),
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 35),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        Icons.video_library_rounded,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Start Creating",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            "Turn your ideas into amazing videos",
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white54,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 35),
 
               const Text(
                 "AI Tools",
@@ -122,11 +192,22 @@ class HomeScreen extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 15,
                 crossAxisSpacing: 15,
+                childAspectRatio: 0.95,
                 children: [
                   toolCard(Icons.movie, "Video Editor"),
                   toolCard(Icons.smart_toy, "AI Video"),
                   toolCard(Icons.image, "AI Photo"),
-                  toolCard(Icons.folder, "Projects"),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProjectsScreen(),
+                        ),
+                      );
+                    },
+                    child: toolCard(Icons.folder, "Projects"),
+                  ),
                 ],
               ),
             ],
