@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:video_player/video_player.dart';
@@ -8,10 +9,7 @@ import 'package:video_player/video_player.dart';
 class EditorScreen extends StatefulWidget {
   final String? videoPath;
 
-  const EditorScreen({
-    super.key,
-    this.videoPath,
-  });
+  const EditorScreen({super.key, this.videoPath});
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -22,71 +20,174 @@ class _EditorScreenState extends State<EditorScreen> {
 
   String overlayText = '';
   bool showTextOverlay = false;
+  String selectedFilter = 'None';
+  String? selectedAudioPath;
+
   double textSize = 28;
   Color textColor = Colors.white;
   double trimStart = 0;
   double trimEnd = 1;
-  String selectedFilter = 'None';
-  double filterIntensity = 1.0;
   bool isExporting = false;
-  final List<String> _editHistory = [];
-  final List<String> _redoHistory = [];
-  String? selectedAudioPath;
+
+  final List<String> _history = [];
+  final List<String> _redo = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.videoPath != null) {
+      _controller = VideoPlayerController.file(File(widget.videoPath!))
+        ..initialize().then((_) {
+          if (mounted) {
+            setState(() {});
+          }
+        });
+
+      _controller.addListener(() {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickAudio() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.audio,
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
 
     if (result != null && result.files.single.path != null) {
       setState(() {
         selectedAudioPath = result.files.single.path;
+        _history.add('audio');
+        _redo.clear();
       });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Audio selected successfully'),
-        ),
-      );
     }
   }
 
-  void _restoreHistoryState(String state) {
-    if (!state.startsWith('filter:')) {
-      return;
-    }
+  void _addText() {
+    final textController = TextEditingController(text: overlayText);
 
-    final parts = state.split('|');
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1B1F),
+        title: const Text('Add Text', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter text',
+            hintStyle: const TextStyle(color: Colors.white38),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.deepPurpleAccent),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                overlayText = textController.text;
+                showTextOverlay = overlayText.trim().isNotEmpty;
+                _history.add('text');
+                _redo.clear();
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (parts.length == 2) {
-      final filter = parts[0].replaceFirst('filter:', '');
-      final intensityText =
-          parts[1].replaceFirst('intensity:', '');
-      final intensity = double.tryParse(intensityText);
+  void _showFilters() {
+    final filters = ['None', 'Bright', 'Warm', 'Cool', 'Vintage', 'B&W'];
 
-      if (intensity != null) {
-        selectedFilter = filter;
-        filterIntensity = intensity;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF17171B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: filters.map((filter) {
+              final selected = selectedFilter == filter;
+
+              return ChoiceChip(
+                label: Text(filter),
+                selected: selected,
+                onSelected: (_) {
+                  setState(() {
+                    selectedFilter = filter;
+                    _history.add('filter:$filter');
+                    _redo.clear();
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _undo() {
+    if (_history.isEmpty) return;
+
+    setState(() {
+      _redo.add(_history.removeLast());
+
+      if (_history.isEmpty) {
+        selectedFilter = 'None';
+        overlayText = '';
+        showTextOverlay = false;
+        selectedAudioPath = null;
       }
-    }
+    });
+  }
+
+  void _redoAction() {
+    if (_redo.isEmpty) return;
+
+    setState(() {
+      final action = _redo.removeLast();
+      _history.add(action);
+    });
   }
 
   String _getVideoFilter() {
-    final i = filterIntensity;
-
     switch (selectedFilter) {
       case 'Bright':
-        return 'eq=brightness=${0.08 * i}:contrast=${1.0 + (0.05 * i)}';
+        return 'eq=brightness=0.08:contrast=1.05';
       case 'Warm':
-        return 'colorbalance=rs=${0.08 * i}:gs=${0.03 * i}:bs=${-0.05 * i}';
+        return 'colorbalance=rs=0.08:gs=0.03:bs=-0.05';
       case 'Cool':
-        return 'colorbalance=rs=${-0.05 * i}:gs=${0.03 * i}:bs=${0.08 * i}';
+        return 'colorbalance=rs=-0.05:gs=0.03:bs=0.08';
       case 'Vintage':
-        return 'eq=saturation=${1.0 - (0.25 * i)}:contrast=${1.0 - (0.1 * i)}';
+        return 'eq=saturation=0.75:contrast=0.9';
       case 'B&W':
-        return 'hue=s=${1.0 - i}';
+        return 'hue=s=0';
       default:
         return 'null';
     }
@@ -95,34 +196,29 @@ class _EditorScreenState extends State<EditorScreen> {
   Future<void> _exportVideo() async {
     if (widget.videoPath == null || isExporting) return;
 
-    setState(() {
-      isExporting = true;
-    });
-
-    final input = widget.videoPath!;
-    final output = '${input}_ultracut.mp4';
-
     final duration = _controller.value.duration.inMilliseconds / 1000.0;
+
     final start = trimStart * duration;
     final end = trimEnd * duration;
     final clipDuration = end - start;
 
     if (clipDuration <= 0) return;
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exporting video...')),
-      );
-    }
+    setState(() {
+      isExporting = true;
+    });
 
+    final input = widget.videoPath!;
+    final output = '${input}_ultracut.mp4';
     final filter = _getVideoFilter();
 
     final command = selectedAudioPath != null
         ? '-y -ss $start -i "$input" -i "$selectedAudioPath" '
-            '-t $clipDuration -map 0:v:0 -map 1:a:0 '
-            '-vf "$filter" -c:v libx264 -c:a aac -shortest "$output"'
-        : '-y -ss $start -i "$input" -t $clipDuration '
-            '-vf "$filter" -c:v libx264 -c:a aac "$output"';
+              '-t $clipDuration -map 0:v:0 -map 1:a:0 '
+              '-vf "$filter" -c:v libx264 -c:a aac -shortest "$output"'
+        : '-y -ss $start -i "$input" '
+              '-t $clipDuration -vf "$filter" '
+              '-c:v libx264 -c:a aac "$output"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -135,650 +231,285 @@ class _EditorScreenState extends State<EditorScreen> {
 
     if (returnCode != null && returnCode.isValueSuccess()) {
       try {
-        await Gal.putVideo(
-          output,
-          album: 'UltraCut',
-        );
+        await Gal.putVideo(output, album: 'UltraCut');
 
         if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Video exported and saved to Gallery!'),
-          ),
+          const SnackBar(content: Text('Video exported successfully')),
         );
       } catch (e) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gallery save failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gallery save failed: $e')));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export failed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Export failed')));
     }
   }
 
-  void _addText() {
-    final controller = TextEditingController(text: overlayText);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1B1B1B),
-          title: const Text(
-            'Add Text',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: 'Enter text',
-              hintStyle: TextStyle(color: Colors.white54),
+  Widget _tool(IconData icon, String title, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF24242A),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: Colors.white, size: 23),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  if (overlayText.isNotEmpty) {
-                    _editHistory.add(overlayText);
-                  }
-                  _redoHistory.clear();
-
-                  overlayText = controller.text;
-                  showTextOverlay = controller.text.trim().isNotEmpty;
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Add'),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
-        );
-      },
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = VideoPlayerController.file(
-      File(widget.videoPath!),
-    )..initialize().then((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget _colorButton(Color color) {
-    return IconButton(
-      onPressed: () {
-        setState(() => textColor = color);
-      },
-      icon: Icon(
-        Icons.circle,
-        color: color,
-        size: 26,
+        ),
       ),
     );
   }
 
-  Widget _editorAction(
-    IconData icon,
-    String title, {
-    VoidCallback? onPressed,
-  }) {
-    return OutlinedButton.icon(
-      onPressed: onPressed ?? () {},
-      icon: Icon(icon),
-      label: Text(title),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: const BorderSide(color: Colors.white24),
+  Widget _timeline() {
+    if (!_controller.value.isInitialized) {
+      return const SizedBox();
+    }
+
+    final position = _controller.value.position;
+    final duration = _controller.value.duration;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF18181D),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.movie_creation_outlined,
+                color: Colors.white70,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Timeline',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${position.inSeconds}s / ${duration.inSeconds}s',
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: VideoProgressIndicator(
+              _controller,
+              allowScrubbing: true,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+            ),
+          ),
+          const SizedBox(height: 8),
+          RangeSlider(
+            values: RangeValues(trimStart, trimEnd),
+            min: 0,
+            max: 1,
+            divisions: 100,
+            onChanged: (values) {
+              if (values.end - values.start > 0.01) {
+                setState(() {
+                  trimStart = values.start;
+                  trimEnd = values.end;
+                });
+              }
+            },
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final ready = widget.videoPath != null && _controller.value.isInitialized;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF09090B),
       appBar: AppBar(
-        title: const Text('UltraCut Editor'),
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF09090B),
+        elevation: 0,
+        title: const Text(
+          'UltraCut',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        actions: [
+          IconButton(onPressed: _undo, icon: const Icon(Icons.undo)),
+          IconButton(onPressed: _redoAction, icon: const Icon(Icons.redo)),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Column(
         children: [
+          // VIDEO PREVIEW
           Expanded(
-            flex: 1,
+            flex: 5,
             child: Container(
-              width: double.infinity,
-              color: Colors.black,
-              child: Center(
-                child: _controller.value.isInitialized
-                  ? LayoutBuilder(
-                      builder: (context, constraints) {
-                        final videoSize = _controller.value.size;
-
-                        return Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          color: Colors.black,
-                          child: FittedBox(
-                            fit: BoxFit.contain,
-                            child: SizedBox(
-                              width: videoSize.width,
-                              height: videoSize.height,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  VideoPlayer(_controller),
-                                  if (showTextOverlay)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      color: Colors.black54,
-                                      child: Text(
-                                        overlayText,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: textColor,
-                                          fontSize: textSize,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+              margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.white10),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ready
+                  ? Center(
+                      child: AspectRatio(
+                        aspectRatio: _controller.value.aspectRatio,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          alignment: Alignment.center,
+                          children: [
+                            VideoPlayer(_controller),
+                            if (showTextOverlay)
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    overlayText,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: textSize,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                ],
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              bottom: 14,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (_controller.value.isPlaying) {
+                                      _controller.pause();
+                                    } else {
+                                      _controller.play();
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white24),
+                                  ),
+                                  child: Icon(
+                                    _controller.value.isPlaying
+                                        ? Icons.pause
+                                        : Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 28,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          ],
+                        ),
+                      ),
                     )
-                  : const CircularProgressIndicator(),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _controller.value.isPlaying
-                    ? _controller.pause()
-                    : _controller.play();
-              });
-            },
-            icon: Icon(
-              _controller.value.isPlaying
-                  ? Icons.pause_circle
-                  : Icons.play_circle,
-              color: Colors.white,
-              size: 55,
+                  : const Center(child: CircularProgressIndicator()),
             ),
           ),
 
-          if (_controller.value.isInitialized)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF171717),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.timeline_rounded,
-                        color: Colors.white70,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Timeline',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_controller.value.position.inSeconds}s / ${_controller.value.duration.inSeconds}s',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: VideoProgressIndicator(
-                      _controller,
-                      allowScrubbing: true,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // TIMELINE
+          _timeline(),
 
-          const SizedBox(height: 10),
-
-          // Audio
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickAudio,
-                    icon: const Icon(Icons.music_note),
-                    label: Text(
-                      selectedAudioPath == null
-                          ? 'Add Music'
-                          : 'Music Selected',
-                    ),
-                  ),
-                ),
-                if (selectedAudioPath != null)
-                  IconButton(
-                    onPressed: () {
-                      setState(() => selectedAudioPath = null);
-                    },
-                    icon: const Icon(Icons.close),
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Volume
-          Row(
-            children: [
-              const SizedBox(width: 16),
-              const Icon(Icons.volume_up, color: Colors.white),
-              Expanded(
-                child: Slider(
-                  value: _controller.value.volume,
-                  min: 0,
-                  max: 1,
-                  onChanged: (value) {
-                    _controller.setVolume(value);
-                    setState(() {});
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          // Speed
-          Row(
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(left: 16),
-                child: Icon(Icons.speed, color: Colors.white),
-              ),
-              Expanded(
-                child: Slider(
-                  value: _controller.value.playbackSpeed,
-                  min: 0.25,
-                  max: 2.0,
-                  divisions: 7,
-                  label: '${_controller.value.playbackSpeed.toStringAsFixed(2)}x',
-                  onChanged: (value) {
-                    _controller.setPlaybackSpeed(value);
-                    setState(() {});
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Trim & Edit',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
+          // TOOLBAR
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white10,
-              borderRadius: BorderRadius.circular(16),
+            height: 105,
+            decoration: const BoxDecoration(
+              color: Color(0xFF101014),
+              border: Border(top: BorderSide(color: Colors.white10)),
             ),
-            child: const Row(
-              children: [
-                Icon(Icons.content_cut, color: Colors.white),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Trim selection ready',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Text styling
-          if (showTextOverlay)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.format_size, color: Colors.white),
-                      Expanded(
-                        child: Slider(
-                          value: textSize,
-                          min: 16,
-                          max: 60,
-                          divisions: 22,
-                          onChanged: (value) {
-                            setState(() => textSize = value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _colorButton(Colors.white),
-                      _colorButton(Colors.red),
-                      _colorButton(Colors.yellow),
-                      _colorButton(Colors.cyan),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-          // CapCut-style Trim
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF171717),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.content_cut_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Trim',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${(trimStart * 100).round()}% - ${(trimEnd * 100).round()}%',
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                RangeSlider(
-                  values: RangeValues(trimStart, trimEnd),
-                  min: 0,
-                  max: 1,
-                  divisions: 100,
-                  activeColor: Colors.white,
-                  inactiveColor: Colors.white24,
-                  onChanged: (values) {
-                    setState(() {
-                      trimStart = values.start;
-                      trimEnd = values.end;
-                    });
-
-                    final duration = _controller.value.duration;
-                    final start = duration * trimStart;
-
-                    _controller.seekTo(start);
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Filters
-          // Filter intensity
-          if (selectedFilter != 'None')
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Icon(Icons.tune, color: Colors.white),
-                  Expanded(
-                    child: Slider(
-                      value: filterIntensity,
-                      min: 0,
-                      max: 1,
-                      divisions: 10,
-                      label: '${(filterIntensity * 100).round()}%',
-                      onChanged: (value) {
-                      setState(() {
-                        _editHistory.add(
-                          'filter:$selectedFilter|intensity:$filterIntensity',
-                        );
-                        _redoHistory.clear();
-                        filterIntensity = value;
-                      });
-                    },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Undo / Redo
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _editHistory.isEmpty
-                    ? null
-                    : () {
-                        setState(() {
-                          final state = _editHistory.removeLast();
-                          _redoHistory.add(
-                            'filter:$selectedFilter|intensity:$filterIntensity',
-                          );
-                          _restoreHistoryState(state);
-                        });
-                      },
-                icon: const Icon(Icons.undo),
-                label: const Text('Undo'),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: _redoHistory.isEmpty
-                    ? null
-                    : () {
-                        setState(() {
-                          final state = _redoHistory.removeLast();
-                          _editHistory.add(
-                            'filter:$selectedFilter|intensity:$filterIntensity',
-                          );
-                          _restoreHistoryState(state);
-                        });
-                      },
-                icon: const Icon(Icons.redo),
-                label: const Text('Redo'),
-              ),
-            ],
-          ),
-
-          if (isExporting)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: LinearProgressIndicator(),
-            ),
-
-          SizedBox(
-            height: 45,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               children: [
-                'None',
-                'Bright',
-                'Warm',
-                'Cool',
-                'Vintage',
-                'B&W',
-              ].map((filter) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(filter),
-                    selected: selectedFilter == filter,
-                    onSelected: (_) {
-                      setState(() {
-                        _editHistory.add(
-                          'filter:$selectedFilter|intensity:$filterIntensity',
-                        );
-                        _redoHistory.clear();
-                        selectedFilter = filter;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Editor actions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _editorAction(
-                    Icons.music_note,
-                    'Audio',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _editorAction(
-                    Icons.text_fields,
-                    'Text',
-                    onPressed: _addText,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _editorAction(
-                    Icons.auto_awesome,
-                    'Filter',
-                  ),
-                ),
+                _tool(Icons.content_cut, 'Trim'),
+                _tool(Icons.call_split, 'Split'),
+                _tool(Icons.music_note, 'Audio', onTap: _pickAudio),
+                _tool(Icons.text_fields, 'Text', onTap: _addText),
+                _tool(Icons.auto_awesome, 'Filter', onTap: _showFilters),
+                _tool(Icons.speed, 'Speed'),
+                _tool(Icons.volume_up, 'Volume'),
+                _tool(Icons.crop, 'Crop'),
               ],
             ),
           ),
 
-          const SizedBox(height: 10),
-
+          // EXPORT
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.undo),
-                    label: const Text('Undo'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.redo),
-                    label: const Text('Redo'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
             child: SizedBox(
               width: double.infinity,
+              height: 52,
               child: ElevatedButton.icon(
-                onPressed: _exportVideo,
-                icon: const Icon(Icons.save),
-                label: const Text('Export Video'),
+                onPressed: isExporting ? null : _exportVideo,
+                icon: isExporting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.file_upload_outlined),
+                label: Text(
+                  isExporting ? 'Exporting...' : 'Export Video',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7048FF),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
             ),
           ),
-
-          const SizedBox(height: 20),
         ],
       ),
     );
