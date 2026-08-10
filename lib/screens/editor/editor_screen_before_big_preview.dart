@@ -267,12 +267,8 @@ class _EditorScreenState extends State<EditorScreen> {
       body: Column(
         children: [
           Expanded(
-            flex: 1,
-            child: Container(
-              width: double.infinity,
-              color: Colors.black,
-              child: Center(
-                child: _controller.value.isInitialized
+            child: Center(
+              child: _controller.value.isInitialized
                   ? LayoutBuilder(
                       builder: (context, constraints) {
                         final videoSize = _controller.value.size;
@@ -315,7 +311,6 @@ class _EditorScreenState extends State<EditorScreen> {
                       },
                     )
                   : const CircularProgressIndicator(),
-              ),
             ),
           ),
           IconButton(
@@ -336,53 +331,12 @@ class _EditorScreenState extends State<EditorScreen> {
           ),
 
           if (_controller.value.isInitialized)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF171717),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.timeline_rounded,
-                        color: Colors.white70,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Timeline',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_controller.value.position.inSeconds}s / ${_controller.value.duration.inSeconds}s',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: VideoProgressIndicator(
-                      _controller,
-                      allowScrubbing: true,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                    ),
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: VideoProgressIndicator(
+                _controller,
+                allowScrubbing: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
 
@@ -534,60 +488,28 @@ class _EditorScreenState extends State<EditorScreen> {
               ),
             ),
 
-          // CapCut-style Trim
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF171717),
-              borderRadius: BorderRadius.circular(16),
-            ),
+          // Trim range
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.content_cut_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Trim',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${(trimStart * 100).round()}% - ${(trimEnd * 100).round()}%',
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Trim',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: 4),
                 RangeSlider(
                   values: RangeValues(trimStart, trimEnd),
                   min: 0,
                   max: 1,
-                  divisions: 100,
-                  activeColor: Colors.white,
-                  inactiveColor: Colors.white24,
                   onChanged: (values) {
                     setState(() {
                       trimStart = values.start;
                       trimEnd = values.end;
                     });
-
-                    final duration = _controller.value.duration;
-                    final start = duration * trimStart;
-
-                    _controller.seekTo(start);
                   },
                 ),
               ],
