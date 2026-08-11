@@ -350,34 +350,60 @@ class _EditorScreenState extends State<EditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ready = widget.videoPath != null && _controller.value.isInitialized;
+    final ready =
+        widget.videoPath != null && _controller.value.isInitialized;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF09090B),
-        elevation: 0,
-        title: const Text(
-          'UltraCut',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          IconButton(onPressed: _undo, icon: const Icon(Icons.undo)),
-          IconButton(onPressed: _redoAction, icon: const Icon(Icons.redo)),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: Column(
-        children: [
-          // VIDEO PREVIEW
-          Expanded(
-            flex: 5,
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      backgroundColor: const Color(0xFF08080A),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // TOP BAR
+            SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'UltraCut',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: isExporting ? null : _exportVideo,
+                    child: Text(
+                      isExporting ? 'Exporting...' : 'Export',
+                      style: const TextStyle(
+                        color: Color(0xFF9B7BFF),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // VIDEO PREVIEW
+            Container(
+              height: 285,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white10),
+                borderRadius: BorderRadius.circular(12),
               ),
               clipBehavior: Clip.antiAlias,
               child: ready
@@ -386,9 +412,9 @@ class _EditorScreenState extends State<EditorScreen> {
                         aspectRatio: _controller.value.aspectRatio,
                         child: Stack(
                           fit: StackFit.expand,
-                          alignment: Alignment.center,
                           children: [
                             VideoPlayer(_controller),
+
                             if (showTextOverlay)
                               Center(
                                 child: Container(
@@ -398,7 +424,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius:
+                                        BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     overlayText,
@@ -411,32 +438,39 @@ class _EditorScreenState extends State<EditorScreen> {
                                   ),
                                 ),
                               ),
+
                             Positioned(
-                              bottom: 14,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    if (_controller.value.isPlaying) {
-                                      _controller.pause();
-                                    } else {
-                                      _controller.play();
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black87,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white24),
-                                  ),
-                                  child: Icon(
-                                    _controller.value.isPlaying
-                                        ? Icons.pause
-                                        : Icons.play_arrow,
-                                    color: Colors.white,
-                                    size: 28,
+                              bottom: 12,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (_controller.value.isPlaying) {
+                                        _controller.pause();
+                                      } else {
+                                        _controller.play();
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 46,
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black87,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      _controller.value.isPlaying
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      color: Colors.white,
+                                      size: 26,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -445,73 +479,186 @@ class _EditorScreenState extends State<EditorScreen> {
                         ),
                       ),
                     )
-                  : const Center(child: CircularProgressIndicator()),
+                  : const Center(
+                      child: CircularProgressIndicator(),
+                    ),
             ),
-          ),
 
-          // TIMELINE
-          _timeline(),
+            const SizedBox(height: 10),
 
-          // TOOLBAR
-          Container(
-            height: 105,
-            decoration: const BoxDecoration(
-              color: Color(0xFF101014),
-              border: Border(top: BorderSide(color: Colors.white10)),
+            // TIME / PLAYBACK ROW
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: ready
+                        ? () {
+                            setState(() {
+                              if (_controller.value.isPlaying) {
+                                _controller.pause();
+                              } else {
+                                _controller.play();
+                              }
+                            });
+                          }
+                        : null,
+                    icon: Icon(
+                      _controller.value.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    ready
+                        ? '${_controller.value.position.inSeconds}s'
+                        : '0s',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    ready
+                        ? '${_controller.value.duration.inSeconds}s'
+                        : '0s',
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              children: [
-                _tool(Icons.content_cut, 'Trim'),
-                _tool(Icons.call_split, 'Split'),
-                _tool(Icons.music_note, 'Audio', onTap: _pickAudio),
-                _tool(Icons.text_fields, 'Text', onTap: _addText),
-                _tool(Icons.auto_awesome, 'Filter', onTap: _showFilters),
-                _tool(Icons.speed, 'Speed'),
-                _tool(Icons.volume_up, 'Volume'),
-                _tool(Icons.crop, 'Crop'),
-              ],
-            ),
-          ),
 
-          // EXPORT
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: isExporting ? null : _exportVideo,
-                icon: isExporting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.file_upload_outlined),
-                label: Text(
-                  isExporting ? 'Exporting...' : 'Export Video',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
+            // TIMELINE
+            if (ready)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121216),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _timeline(),
+              ),
+
+            const SizedBox(height: 8),
+
+            // EDITING TOOLS
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF101014),
+                  border: Border(
+                    top: BorderSide(color: Colors.white10),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7048FF),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+
+                    SizedBox(
+                      height: 82,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        children: [
+                          _tool(
+                            Icons.content_cut_rounded,
+                            'Trim',
+                          ),
+                          _tool(
+                            Icons.call_split_rounded,
+                            'Split',
+                          ),
+                          _tool(
+                            Icons.music_note_rounded,
+                            'Audio',
+                            onTap: _pickAudio,
+                          ),
+                          _tool(
+                            Icons.text_fields_rounded,
+                            'Text',
+                            onTap: _addText,
+                          ),
+                          _tool(
+                            Icons.auto_awesome_rounded,
+                            'Filter',
+                            onTap: _showFilters,
+                          ),
+                          _tool(
+                            Icons.speed_rounded,
+                            'Speed',
+                          ),
+                          _tool(
+                            Icons.volume_up_rounded,
+                            'Volume',
+                          ),
+                          _tool(
+                            Icons.crop_rounded,
+                            'Crop',
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // UNDO / REDO
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        14,
+                        4,
+                        14,
+                        8,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextButton.icon(
+                              onPressed: _undo,
+                              icon: const Icon(
+                                Icons.undo_rounded,
+                                size: 20,
+                              ),
+                              label: const Text('Undo'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white70,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: TextButton.icon(
+                              onPressed: _redoAction,
+                              icon: const Icon(
+                                Icons.redo_rounded,
+                                size: 20,
+                              ),
+                              label: const Text('Redo'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 }
